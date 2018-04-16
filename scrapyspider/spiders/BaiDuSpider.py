@@ -8,6 +8,7 @@ from re import sub
 import json
 
 class BaiKeSpider(Spider):
+
     name = 'baike'
 
     headers = {
@@ -29,17 +30,18 @@ class BaiKeSpider(Spider):
 
         item['name'] = sel.xpath('//dd[@class="lemmaWgt-lemmaTitle-title"]/h1/text()').extract()
 
-        summary_paras=response.xpath('//div[@class="lemma-summary"]').xpath('div[@class="para"]')
-        summary=""
+        summary_paras = response.xpath('//div[@class="lemma-summary"]').xpath('div[@class="para"]')
+        summary = ""
         for para_node in summary_paras:
-            seg_list=para_node.re('>\s*(.*?)\s*<')
+            seg_list = para_node.re('>\s*(.*?)\s*<')
             # os._exit(233)  PS:scrapy里的list object在python里并不是list type
 
             for seg in seg_list:
-                summary="%s%s"%(summary,seg)
+                summary = "%s%s"%(summary,seg)
 
         summary=summary.replace("\n","")
-        item['descrip']= sub('\[\d+\]','',summary)
+
+        item['descrip'] = sub('\[\d+\]','',summary)
 
         info_names = sel.xpath('//dt[@class="basicInfo-item name"]/text()').extract()
         info_values = sel.xpath('//dd[@class="basicInfo-item value"]/text()').extract()
@@ -56,8 +58,20 @@ class BaiKeSpider(Spider):
 
         item['infobox']=json.dumps(info_dict, ensure_ascii=False)
 
+        tag_node = sel.xpath('//dd[@id="open-tag-item"]/span')
+        tag_list = []
+        for tag_tmp in tag_node:
+            tags = tag_tmp.re('>\s*(.*?)\s*<')
+            x = ""
+            for tag in tags:
+                x = "%s%s" % (x, tag)
+                # 如果存储了空串的话，把空串和有内容的字符串加起来就行
+            tag_list.append(x)
+
+        item['tag'] = tag_list
+
         # item['tag'] = sel.xpath('//dd[@id="open-tag-item"]/span/text()').extract()
-        tags = sel.xpath('//dd[@id="open-tag-item"]/span')
+
 
         keys = ['name', 'descrip', 'infobox', 'tag']
         for key in keys:
