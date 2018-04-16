@@ -31,6 +31,11 @@ class BaiKeItem(scrapy.Item):
     infobox = scrapy.Field()
 
     tag = scrapy.Field()
+    
+    oid=scrapy.Field()
+
+    infolink = scrapy.Field()
+
 
     polysemy = scrapy.Field()
     #
