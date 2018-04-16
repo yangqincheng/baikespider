@@ -32,7 +32,7 @@ class BaiKeItem(scrapy.Item):
 
     tag = scrapy.Field()
 
-    # polysemy_name = scrapy.Field()
+    polysemy = scrapy.Field()
     #
     # polysemy_href = scrapy.Field()
     # #多义词表

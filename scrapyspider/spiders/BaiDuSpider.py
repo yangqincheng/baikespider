@@ -18,7 +18,7 @@ class BaiKeSpider(Spider):
     }
 
     def start_requests(self):
-        urls = 'https://baike.baidu.com/item/c语言/105958'
+        urls = 'https://baike.baidu.com/item/%E5%A7%9A%E6%98%8E/28'
         yield Request(urls, headers=self.headers)
 
 
@@ -69,9 +69,25 @@ class BaiKeSpider(Spider):
             tag_list.append(x)
 
         item['tag'] = tag_list
+        # 开始保存多义词表
 
-        # item['tag'] = sel.xpath('//dd[@id="open-tag-item"]/span/text()').extract()
-        # 测试能否push
+        poly_dict = {}
+        polysemy = sel.xpath('//ul[@class="polysemantList-wrapper cmn-clearfix"]/li')
+
+        for poly_tmp in polysemy:
+            poly_nodes = poly_tmp.re('>\s*(.*?)\s*<')
+            poly_name = ""
+            for poly_node in poly_nodes:
+                poly_name = "%s%s"%(poly_name,poly_node)
+            poly_url = poly_tmp.xpath('./a/@href').extract()
+            poly_dict[poly_name] = poly_url
+
+        item['polysemy'] =poly_dict
+
+
+
+
+
 
         keys = ['name', 'descrip', 'infobox', 'tag']
         for key in keys:
