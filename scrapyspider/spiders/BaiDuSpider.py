@@ -10,9 +10,7 @@ import json
 class BaiKeSpider(Spider):
 
     name = 'baike'
-    urls=[]
-    url_counter=0
-    
+  
     headers = {
         'User-Agent':
         'Mozilla/5.0 '
@@ -20,11 +18,8 @@ class BaiKeSpider(Spider):
     }
 
     def start_requests(self):
-
-        self.urls.append(parse.unquote('https://baike.baidu.com/item/%E5%A7%9A%E6%98%8E/28'))
-        yield Request(self.urls[self.url_counter], headers=self.headers)
-
-
+        urls='https://baike.baidu.com/item/%E5%A7%9A%E6%98%8E/28'
+        yield Request(urls, headers=self.headers)
 
 
     def parse(self, response):
@@ -33,7 +28,7 @@ class BaiKeSpider(Spider):
         item = BaiKeItem()
         
         p=re.compile('.*(\/item\/.*)')#！
-        oid=p.match(self.urls[self.url_counter]).group(1)
+        oid = p.match(current_url).group(1)
         oid = oid.replace("#viewPageContent", "")
         item['oid']=parse.unquote(oid)#把oid乱码部分解码为中文
 
@@ -64,7 +59,7 @@ class BaiKeSpider(Spider):
             info_values.append(value)
 
             #提取链接
-            tmp_link_list=value_node.re('\"(\/item\/.*)\"')
+            tmp_link_list=value_node.re('\"(\/item\/[^\"]*)\"')
             if len(tmp_link_list)==0:
                 info_links.append('')
             else:
@@ -121,9 +116,7 @@ class BaiKeSpider(Spider):
             item[key] = str(item[key]).replace('\n', '')  # 转换为字符串，好存进数据库
 
         yield item
-        
-        self.url_counter+=1
-
+   
         # extract links"/item..."注意链接此处还没有解码
         links = []
         for link in sel.xpath('//link/@href').re('.*\/item\/.*'):
@@ -135,7 +128,6 @@ class BaiKeSpider(Spider):
 
         for link in links:
             unquote_link=parse.unquote(link)
-            self.urls.append(unquote_link)            
             request=Request(url=unquote_link,callback=self.parse,headers=self.headers,encoding='utf-8')
             yield request
 
