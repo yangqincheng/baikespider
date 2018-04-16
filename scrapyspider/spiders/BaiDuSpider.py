@@ -71,7 +71,7 @@ class BaiKeSpider(Spider):
         item['tag'] = tag_list
 
         # item['tag'] = sel.xpath('//dd[@id="open-tag-item"]/span/text()').extract()
-
+        # 测试能否push
 
         keys = ['name', 'descrip', 'infobox', 'tag']
         for key in keys:
