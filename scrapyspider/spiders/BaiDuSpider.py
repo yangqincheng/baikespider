@@ -21,7 +21,7 @@ class BaiKeSpider(Spider):
 
     def start_requests(self):
 
-        self.urls.append(parse.unquote('https://baike.baidu.com/item/c语言/105958'))
+        self.urls.append(parse.unquote('https://baike.baidu.com/item/%E5%A7%9A%E6%98%8E/28'))
         yield Request(self.urls[self.url_counter], headers=self.headers)
 
 
@@ -34,7 +34,7 @@ class BaiKeSpider(Spider):
         
         p=re.compile('.*(\/item\/.*)')#！
         oid=p.match(self.urls[self.url_counter]).group(1)
-        item['oid']=parse.quote(oid)#把oid乱码部分编码为中文
+        item['oid']=parse.unquote(oid)#把oid乱码部分解码为中文
 
         item['name'] = sel.xpath('//dd[@class="lemmaWgt-lemmaTitle-title"]/h1/text()').extract()
 
@@ -49,7 +49,7 @@ class BaiKeSpider(Spider):
 
         summary=summary.replace("\n","")
 
-        item['descrip'] = sub('\[\d+\]','',summary)
+        item['descrip'] = re.sub('\[\d+\]','',summary)
 
         info_names = sel.xpath('//dt[@class="basicInfo-item name"]/text()').extract()
         info_values = []
@@ -67,7 +67,7 @@ class BaiKeSpider(Spider):
             if len(tmp_link_list)==0:
                 info_links.append('')
             else:
-                info_links.append(parse.quote(tmp_link_list[0]))
+                info_links.append(parse.unquote(tmp_link_list[0]))
         item['infolink']=info_links
         
         count=0
@@ -104,9 +104,11 @@ class BaiKeSpider(Spider):
             for poly_node in poly_nodes:
                 poly_name = "%s%s"%(poly_name,poly_node)
             poly_url = poly_tmp.xpath('./a/@href').extract()
-            poly_dict[poly_name] = poly_url
+            poly_url = " ".join(list(poly_url))
+            poly_url = poly_url.replace("#viewPageContent", "")
+            poly_dict[poly_name] = parse.unquote(poly_url)
 
-        item['polysemy'] =poly_dict
+        item['polysemy'] = poly_dict
 
 
 
@@ -128,7 +130,7 @@ class BaiKeSpider(Spider):
         for link in sel.xpath('//a[@href]/@href').re('\/item\/.*'):
             links.append("https://baike.baidu.com%s"%link)
 
-        print(links)
+        # print(links)
 
         for link in links:
             unquote_link=parse.unquote(link)
