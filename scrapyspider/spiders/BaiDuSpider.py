@@ -34,6 +34,7 @@ class BaiKeSpider(Spider):
         
         p=re.compile('.*(\/item\/.*)')#！
         oid=p.match(self.urls[self.url_counter]).group(1)
+        oid = oid.replace("#viewPageContent", "")
         item['oid']=parse.unquote(oid)#把oid乱码部分解码为中文
 
         item['name'] = sel.xpath('//dd[@class="lemmaWgt-lemmaTitle-title"]/h1/text()').extract()
