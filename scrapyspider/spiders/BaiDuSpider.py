@@ -32,39 +32,51 @@ class BaiKeSpider(Spider):
         oid = p.match(current_url).group(1)
         oid = oid.replace("#viewPageContent", "")
         item['oid'] = parse.unquote(oid)  # 把oid乱码部分解码为中文
-
+        # 1.保存当前页面的url，通过调用response对象的url来找到当前页面的url
         item['name'] = sel.xpath('//dd[@class="lemmaWgt-lemmaTitle-title"]/h1/text()').extract()
-
+        # 2.找到该词条的name，直接通过xpath方法找到相应的词条名字
         summary_paras = response.xpath('//div[@class="lemma-summary"]').xpath('div[@class="para"]')
+        # 3. 开始保存该词条的简介，因为简介的文本内容是由多个标签的文本内容组成，所以我们先找到简介的父节点
         summary = ""
         for para_node in summary_paras:
             seg_list = para_node.re('>\s*(.*?)\s*<')
+            # 3.1 通过正则找到><标签的内容 \s是匹配任何空白字符
             # os._exit(233)  PS:scrapy里的list object在python里并不是list type
 
             for seg in seg_list:
                 summary = "%s%s" % (summary, seg)
+            # 3.2 把分割的内容连接成字符串，'%s%d'%('spider',1)相当于'spider1'，%s是替换字符串，%d是替换数字
 
         summary = summary.replace("\n", "")
-
+        # 3.3 把字符串里面的\n替换掉
         item['descrip'] = re.sub('\[\d+\]', '', summary)
-
+        # 3.4 用正则把summary中的[]去掉，保存在item里面
         info_names = sel.xpath('//dt[@class="basicInfo-item name"]/text()').extract()
+        # 4.1 找到info_box name的节点
         info_values = []
         info_links = []
+        # 4.2 创建列表
         values_node = sel.xpath('//dd[@class="basicInfo-item value"]')
+        # 4.3 找到value值的父节点
         for value_node in values_node:
             seg_list = value_node.re('>\s*(.*?)\s*<')
+            # 4.4 找到每个节点的value值
             value = ""
             for seg in seg_list:
                 value = "%s%s" % (value, seg)
+            # 4.5 把value值连起来
             info_values.append(value)
+            # 4.6 加入values列表里面
 
-            # 提取链接
+            # 5.提取链接
             tmp_link_list = value_node.re('\"(\/item\/[^\"]*)\"')
+            # 5.1 用正则找info_box里面的链接 形如 "/item/123456" 这样的地方
             if len(tmp_link_list) == 0:
                 info_links.append('')
             else:
                 info_links.append(parse.unquote(tmp_link_list[0]))
+                # 5.2 保存链接到列表前先转码
+
         item['infolink'] = info_links
 
         count = 0
