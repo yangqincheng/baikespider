@@ -50,7 +50,7 @@ class BaiKeSpider(Spider):
         summary = summary.replace("\n", "")
         # 3.3 把字符串里面的\n替换掉
         item['descrip'] = re.sub('\[\d+\]', '', summary)
-        # 3.4 用正则把summary中的[]去掉，保存在item里面
+        # 3.4 用正则把summary中的形如[1][2]去掉，保存在item里面
         info_names = sel.xpath('//dt[@class="basicInfo-item name"]/text()').extract()
         # 4.1 找到info_box name的节点
         info_values = []
@@ -81,17 +81,20 @@ class BaiKeSpider(Spider):
 
         count = 0
         info_dict = {}
+        # 6.开始保存info_box
         if len(info_names) != len(info_values):
             print('Error in infobox: fail to match name and value')
         while count < len(info_names):
             tmp_name = info_names[count]
             tmp_value = info_values[count]
             info_dict[tmp_name.replace('\xa0', '')] = tmp_value.replace('\xa0', '')
+            # 6.1开始组成字典形式 info_dict[name]=value,\xa0是为了替换掉空格
             count += 1
 
         item['infobox'] = json.dumps(info_dict, ensure_ascii=False)
-
+        # 6.2 json.dumps 是把dict格式转化成str模式，想输出真正的中文需要指定ensure_ascii=False，不然是输出的中文编码
         tag_node = sel.xpath('//dd[@id="open-tag-item"]/span')
+        # 7.开始保存标签
         tag_list = []
         for tag_tmp in tag_node:
             tags = tag_tmp.re('>\s*(.*?)\s*<')
@@ -102,19 +105,22 @@ class BaiKeSpider(Spider):
             tag_list.append(x)
 
         item['tag'] = tag_list
-        # 开始保存多义词表
+        # 8.开始保存多义词表
 
         poly_dict = {}
         polysemy = sel.xpath('//ul[@class="polysemantList-wrapper cmn-clearfix"]/li')
-
+        # 8.1 找到多义词表的父节点
         for poly_tmp in polysemy:
             poly_nodes = poly_tmp.re('>\s*(.*?)\s*<')
             poly_name = ""
             for poly_node in poly_nodes:
                 poly_name = "%s%s" % (poly_name, poly_node)
             poly_url = poly_tmp.xpath('./a/@href').extract()
+            # 8.2 提取链接
             poly_url = " ".join(list(poly_url))
+            # 8.3 转化成字符串
             poly_url = poly_url.replace("#viewPageContent", "")
+            # 8.4 替换掉#viewPageContent
             poly_dict[poly_name] = parse.unquote(poly_url)
 
         item['polysemy'] = poly_dict
@@ -127,6 +133,7 @@ class BaiKeSpider(Spider):
 
 
         # extract links"/item..."注意链接此处还没有解码
+        # 9.下一步的跳转，找到所有可以跳转的链接
         links = []
         for link in sel.xpath('//link/@href').re('.*\/item\/.*'):
             links.append(link)
