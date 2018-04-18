@@ -39,7 +39,7 @@ class BaiKeSpider(Spider):
         oid = oid.replace("#viewPageContent", "")
         item['oid'] = parse.unquote(oid)  # 把oid乱码部分解码为中文
         # 1.保存当前页面的url，通过调用response对象的url来找到当前页面的url
-        item['name'] = sel.xpath('//dd[@class="lemmaWgt-lemmaTitle-title"]/h1/text()').extract()
+        item['name'] = sel.xpath('//dd[@class="lemmaWgt-lemmaTitle-title"]/h1/text()').extract()[0]
         # 2.找到该词条的name，直接通过xpath方法找到相应的词条名字
         summary_paras = response.xpath('//div[@class="lemma-summary"]').xpath('div[@class="para"]')
         # 3. 开始保存该词条的简介，因为简介的文本内容是由多个标签的文本内容组成，所以我们先找到简介的父节点
