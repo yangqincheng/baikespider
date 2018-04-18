@@ -6,6 +6,7 @@ from urllib import parse
 import re
 import json
 
+from scrapyspider import pipelines
 
 class BaiKeSpider(Spider):
     name = 'baike'
@@ -15,11 +16,16 @@ class BaiKeSpider(Spider):
             'Mozilla/5.0 '
             '(Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.143 Safari/537.36',
     }
+    
+    def __init__(self):
+        sqls=pipelines.ScrapyspiderPipeline()
+        sqls.create_entity_table('entity_table')
+        sqls.create_polysemant_table('synonym_table') 
 
     def start_requests(self):
-
-        urls='https://baike.baidu.com/item/%E5%A7%9A%E6%98%8E/28'
-        yield Request(urls, headers=self.headers)
+        urls=['https://baike.baidu.com/item/%E9%B2%81%E8%BF%85/36231','https://baike.baidu.com/item/%E9%98%BF%E5%B0%94%E4%BC%AF%E7%89%B9%C2%B7%E7%88%B1%E5%9B%A0%E6%96%AF%E5%9D%A6']
+        for url in urls:
+            yield Request(url, headers=self.headers)
 
     def parse(self, response):
         sel = Selector(response)
@@ -111,7 +117,7 @@ class BaiKeSpider(Spider):
             poly_nodes = poly_tmp.re('>\s*(.*?)\s*<')
             poly_name = ""
             for poly_node in poly_nodes:
-                poly_name = "%s%s" % (poly_name, poly_node)
+                poly_name = "%s%s" % (poly_name, poly_node.replace('▪',''))
             poly_url = poly_tmp.xpath('./a/@href').extract()
             poly_url = " ".join(list(poly_url))
             poly_url = poly_url.replace("#viewPageContent", "")
