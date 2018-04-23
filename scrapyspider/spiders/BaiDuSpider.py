@@ -5,8 +5,13 @@ from scrapy.selector import Selector
 from urllib import parse
 import re
 import json
-
 from scrapyspider import pipelines
+
+import win_unicode_console
+win_unicode_console.enable()
+# Linux不用加
+
+
 
 class BaiKeSpider(Spider):
     name = 'baike'
@@ -18,9 +23,9 @@ class BaiKeSpider(Spider):
     }
     
     def __init__(self):
-        sqls=pipelines.ScrapyspiderPipeline()
-        sqls.create_entity_table('entity_table')
-        sqls.create_polysemant_table('synonym_table') 
+        sqls = pipelines.ScrapyspiderPipeline()
+        # sqls.create_entity_table('entity_table')
+        # sqls.create_polysemant_table('synonym_table')
 
     def start_requests(self):
         urls=['https://baike.baidu.com/item/%E9%B2%81%E8%BF%85/36231','https://baike.baidu.com/item/%E9%98%BF%E5%B0%94%E4%BC%AF%E7%89%B9%C2%B7%E7%88%B1%E5%9B%A0%E6%96%AF%E5%9D%A6']

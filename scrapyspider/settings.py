@@ -14,12 +14,9 @@ BOT_NAME = 'scrapyspider'
 SPIDER_MODULES = ['scrapyspider.spiders']
 NEWSPIDER_MODULE = 'scrapyspider.spiders'
 
-# DOMAIN_DEPTHS = {'amazon.com': 1, 'homedepot.com': 4,'baike.baidu.com':3}#by myself
-# DEPTH_LIMIT = 4
-
-ITEM_PIPELINES = {
-    'scrapyspider.pipelines.ScrapyspiderPipeline': 300,#保存到mysql数据库
-}
+DOMAIN_DEPTHS = {'amazon.com': 1, 'homedepot.com': 4,'baike.baidu.com':4}#by myself
+# DEPTH_LIMIT = 3
+# 不限制深度
 
 
 
@@ -72,9 +69,9 @@ DOWNLOADER_MIDDLEWARES = {
 
 # Configure item pipelines
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'scrapyspider.pipelines.ScrapyspiderPipeline': 300,
-#}
+ITEM_PIPELINES = {
+   'scrapyspider.pipelines.ScrapyspiderPipeline': 300,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://doc.scrapy.org/en/latest/topics/autothrottle.html
