@@ -39,7 +39,8 @@ class BaiKeSpider(Spider):
 
         current_url=response.url
 
-        p = re.compile('.*(\/item\/.*)')  # ！
+        p = re.compile('.*(\/item\/[^\?]+).*')  # 去掉无意义的？及后面的部分
+
         oid = p.match(current_url).group(1)
         oid = oid.replace("#viewPageContent", "")
         item['oid'] = parse.unquote(oid)  # 把oid乱码部分解码为中文
@@ -79,13 +80,14 @@ class BaiKeSpider(Spider):
             info_values.append(value)
             # 4.6 加入values列表里面
 
-            # 5.提取链接
-            tmp_link_list = value_node.re('\"(\/item\/[^\"]*)\"')
+            # 提取链接
+            tmp_link_list = value_node.re('\"(\/item\/[^\"]+)\"')
+            p=re.compile('(\/item\/[^\?]+).*')#去掉引号,以及?等无意义部分
             # 5.1 用正则找info_box里面的链接 形如 "/item/123456" 这样的地方
             if len(tmp_link_list) == 0:
                 info_links.append('')
             else:
-                info_links.append(parse.unquote(tmp_link_list[0]))
+                info_links.append(p.match(parse.unquote(tmp_link_list[0])).group(1))
                 # 5.2 保存链接到列表前先转码
 
         item['infolink'] = info_links
@@ -120,19 +122,24 @@ class BaiKeSpider(Spider):
 
         poly_dict = {}
         polysemy = sel.xpath('//ul[@class="polysemantList-wrapper cmn-clearfix"]/li')
-        # 8.1 找到多义词表的父节点
+
+        first_poly_run=True
+
         for poly_tmp in polysemy:
             poly_nodes = poly_tmp.re('>\s*(.*?)\s*<')
             poly_name = ""
             for poly_node in poly_nodes:
                 poly_name = "%s%s" % (poly_name, poly_node.replace('▪',''))
-            poly_url = poly_tmp.xpath('./a/@href').extract()
-            # 8.2 提取链接
-            poly_url = " ".join(list(poly_url))
-            # 8.3 转化成字符串
-            poly_url = poly_url.replace("#viewPageContent", "")
-            # 8.4 替换掉#viewPageContent
-            poly_dict[poly_name] = parse.unquote(poly_url)
+            if first_poly_run is True:
+                poly_url=item['oid']
+                poly_dict[poly_name] = parse.unquote(poly_url)
+                first_poly_run=False
+            else:
+                poly_url = poly_tmp.xpath('./a/@href').extract()
+                poly_url = " ".join(list(poly_url))
+                poly_url = poly_url.replace("#viewPageContent", "")
+                poly_dict[poly_name] = parse.unquote(poly_url)
+
 
         item['polysemy'] = poly_dict
 
