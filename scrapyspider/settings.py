@@ -14,8 +14,12 @@ BOT_NAME = 'scrapyspider'
 SPIDER_MODULES = ['scrapyspider.spiders']
 NEWSPIDER_MODULE = 'scrapyspider.spiders'
 
-DOMAIN_DEPTHS = {'amazon.com': 1, 'homedepot.com': 4,'baike.baidu.com':4}#by myself
-DEPTH_LIMIT = 3
+# DOMAIN_DEPTHS = {'amazon.com': 1, 'homedepot.com': 4,'baike.baidu.com':3}#by myself
+# DEPTH_LIMIT = 4
+
+ITEM_PIPELINES = {
+    'scrapyspider.pipelines.ScrapyspiderPipeline': 300,#保存到mysql数据库
+}
 
 
 
