@@ -7,7 +7,7 @@
 import pymysql.cursors
 import sys
 from scrapy import Request
-
+from scrapy.contrib.spiders.init import InitSpider
 from scrapy.exceptions import DropItem
 from scrapy.pipelines.images import ImagesPipeline
 
@@ -161,9 +161,9 @@ class ScrapyspiderPipeline(object):
         return item
 
 
-class DoubanImgsPipeline(object):
-    def process_item(self, item, spider):
-        return item
+# class ImgPipeline(object):
+#     def process_item(self, item, spider):
+#         return item
 
 class PicturePipeline(ImagesPipeline):
     default_headers = {
@@ -175,10 +175,12 @@ class PicturePipeline(ImagesPipeline):
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36',
     }
 
+
+
     def get_media_requests(self, item, info):
-        for image_url in item['image_urls']:
-            self.default_headers['referer'] = image_url
-            yield Request(image_url, headers=self.default_headers)
+        image_url = item['image_urls']
+        self.default_headers['referer'] = image_url[0]
+        yield Request(image_url[0], headers=self.default_headers)
 
     def item_completed(self, results, item, info):
         image_paths = [x['path'] for ok, x in results if ok]
@@ -186,5 +188,19 @@ class PicturePipeline(ImagesPipeline):
             raise DropItem("Item contains no images")
         item['images_paths'] = image_paths
         return item
+
+    # def process_item(self, item, spider):
+    #     return item
+
+class testSpider(InitSpider):
+    name = 'test'
+    custom_settings = {
+        'ITEM_PIPELINES': {
+            'app.MyPipeline': 400
+        }
+    }
+
+
+
 
 
