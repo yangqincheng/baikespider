@@ -71,7 +71,12 @@ DOWNLOADER_MIDDLEWARES = {
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
    'scrapyspider.pipelines.ScrapyspiderPipeline': 300,
+   'scrapyspider.pipelines.PicturePipeline': 100
 }
+
+IMAGES_STORE = 'D:\Work\scrapyspider\scrapyspider\pictures'
+# 存放图片的文件夹
+
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://doc.scrapy.org/en/latest/topics/autothrottle.html
