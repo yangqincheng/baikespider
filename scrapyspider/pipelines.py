@@ -7,11 +7,11 @@
 import pymysql.cursors
 import sys
 from scrapy import Request
-from scrapy.contrib.spiders.init import InitSpider
-from scrapy.exceptions import DropItem
-from scrapy.pipelines.images import ImagesPipeline
 
-class ScrapyspiderPipeline(object):
+from scrapy.pipelines.images import ImagesPipeline
+from scrapy.exceptions import DropItem
+
+class BaiKeSpiderPipeline(object):
     '''保存到数据库中对应的class
        1、在settings.py文件中配置
        2、在自己实现的爬虫类中yield item,会自动执行'''
@@ -20,10 +20,10 @@ class ScrapyspiderPipeline(object):
         self.dbparams = {
             'host':'127.0.0.1',
             'port': 3306,
-            'user': 'yqc',
-            # 'user': 'root',
-            # 'password': '1240',
-            'password': '123456',
+            'user': 'root',
+            'password': '1240',
+            # 'user': 'yqc',
+            # 'password': '123456',
             'db': 'scrapy_baike',
             'charset': 'utf8mb4',
             'cursorclass': pymysql.cursors.DictCursor,
@@ -42,18 +42,32 @@ class ScrapyspiderPipeline(object):
             self.cursor.execute("SET CHARACTER SET utf8mb4")
             self.cursor.execute("SET character_set_connection=utf8mb4")
             # 执行sql语句
-            self.cursor.execute(sql)
-            # 提交到数据库执行
+
+            if self.cursor.execute(sql) != 1:
+                print("Warning: fetch too many attributes for randow data!!By default excute_sql just return one row's data")
+            #
+            # rows = self.cursor.fetchall()
+            # for row in rows:
+            #     for data in row:
+            #         if data is None:
+            #             continue
+            #         else:
+            #             # 关闭数据库连接
+            #             self.db.close()
+            #             return data
             self.db.commit()
+            # 提交到数据库执行
+            self.db.close()
+
+            return self.cursor.fetchone()
         except:
             # 如果发生错误则回滚
             print("ERR in sql execution!!; The sql is {}".format(sql))
             self.db.rollback()
             sys.exit(233)
 
-        # 关闭数据库连接
-        self.db.close()
-        return self.cursor.rowcount
+
+
 
     def deal_with_quotes(self,processed_str):#处理插入MySQL的引号问题
         return processed_str.replace("\"","\\\"").replace("\'","\\\'")
@@ -130,9 +144,6 @@ class ScrapyspiderPipeline(object):
        """ % (table_name, names, values.replace("\\\\\"","\\\""))
         self.execute_sql(sql)
 
-
-
-
     # pipeline默认调用
     def process_item(self, item, spider):
         data_dict=dict(item)
@@ -160,11 +171,6 @@ class ScrapyspiderPipeline(object):
 
         return item
 
-
-# class ImgPipeline(object):
-#     def process_item(self, item, spider):
-#         return item
-
 class PicturePipeline(ImagesPipeline):
     default_headers = {
         'accept': 'image/webp,image/*,*/*;q=0.8',
@@ -175,12 +181,11 @@ class PicturePipeline(ImagesPipeline):
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36',
     }
 
-
-
     def get_media_requests(self, item, info):
         image_url = item['image_urls']
-        self.default_headers['referer'] = image_url[0]
-        yield Request(image_url[0], meta = {'image_name': item['image_name']}, headers=self.default_headers)
+        self.default_headers['referer'] = image_url
+        if image_url != "none":
+            yield Request(image_url, meta = {'image_name': item['image_name']}, headers=self.default_headers)
         # meta = {'image_name': item['image_name']},
 
     def item_completed(self, results, item, info):
@@ -196,18 +201,47 @@ class PicturePipeline(ImagesPipeline):
         # return 'full/%s' % (tmp)
         return 'full/%s.jpg' % request.meta['image_name']
 
-    # def process_item(self, item, spider):
-    #     return item
+class PictureUrlsPipeline(object):
+    '''保存到百度百科的词条图片
+       1、从数据库中提取oid
+       2、检查id是否越界
+    '''
 
-class testSpider(InitSpider):
-    name = 'test'
-    custom_settings = {
-        'ITEM_PIPELINES': {
-            'app.MyPipeline': 400
-        }
+    default_headers = {
+        'accept': 'image/webp,image/*,*/*;q=0.8',
+        'accept-encoding': 'gzip, deflate, sdch, br',
+        'accept-language': 'zh-CN,zh;q=0.8,en;q=0.6',
+        'cookie': 'bid=yQdC/AzTaCw',
+        'referer': 'https://www.douban.com/photos/photo/2370443040/',
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36',
     }
 
+    baiduPipelines=BaiKeSpiderPipeline()#引用前一个pipelline的各项功能
+    dbparams=baiduPipelines.dbparams
+    execute_sql=baiduPipelines.execute_sql
 
+    def max_id(self, table_name):#找出最大的id值
+        sql = """
+        SELECT MAX(id) FROM %s;
+        """ % table_name
+        result=int(float(self.execute_sql(sql)['MAX(id)']))#MySQL默认返回的是浮点类型
+        print("the max_id is ",result)
+        if result <= 0:
+            print('Err in get max_id: got max id <= 0')
+            sys.exit(233)
+        else:
+            return result
 
+    def get_oid(self, table_name, id):
+        tbl_max_id=self.max_id(table_name)
+        if id > tbl_max_id:#检查id是否越界
+            print("ERR: The id you give is to big! No such row")
+            sys.exit(233)
+
+        sql = """
+        SELECT oid FROM %s
+        WHERE id=%s;
+        """ % (table_name, id)
+        return self.execute_sql(sql)['oid']#注意fetchone返回的是字典类型
 
 
