@@ -180,7 +180,8 @@ class PicturePipeline(ImagesPipeline):
     def get_media_requests(self, item, info):
         image_url = item['image_urls']
         self.default_headers['referer'] = image_url[0]
-        yield Request(image_url[0], headers=self.default_headers)
+        yield Request(image_url[0], meta = {'image_name': item['image_name']}, headers=self.default_headers)
+        # meta = {'image_name': item['image_name']},
 
     def item_completed(self, results, item, info):
         image_paths = [x['path'] for ok, x in results if ok]
@@ -188,6 +189,12 @@ class PicturePipeline(ImagesPipeline):
             raise DropItem("Item contains no images")
         item['images_paths'] = image_paths
         return item
+
+    def file_path(self, request, response=None, info=None):
+        # tmp = request.url.split('/')[-1]
+        # # name = tmp+".jpg"
+        # return 'full/%s' % (tmp)
+        return 'full/%s.jpg' % request.meta['image_name']
 
     # def process_item(self, item, spider):
     #     return item
