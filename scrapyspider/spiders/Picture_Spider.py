@@ -3,6 +3,8 @@ import re
 from scrapy import Request
 from scrapyspider.items import PictureItem
 
+import time
+
 class Picture_Spider(Spider):
     name = 'picture'
 
@@ -21,7 +23,15 @@ class Picture_Spider(Spider):
 
         list_imgs = response.xpath('//div[@class="summary-pic"]/a/img/@src').extract()
         item = PictureItem()
-        if list_imgs:
+        # 从这里开始写 把当前页面的oid放进去
 
-            item ['image_urls'] = list_imgs
-            yield item
+
+        ticks = time.time()
+        # 当前时间
+        item['image_name'] = ticks
+
+        if list_imgs:
+            item['image_urls'] = list_imgs
+
+        yield item
+
