@@ -47,3 +47,4 @@ class PictureItem(scrapy.Item):
     image_urls = scrapy.Field()  # 保存图片地址
     images = scrapy.Field()  # 保存图片的信息
     images_paths = scrapy.Field()   # 保存文件的路径
+    image_name = scrapy.Field() # 图片的名字
