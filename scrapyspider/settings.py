@@ -14,11 +14,16 @@ BOT_NAME = 'scrapyspider'
 SPIDER_MODULES = ['scrapyspider.spiders']
 NEWSPIDER_MODULE = 'scrapyspider.spiders'
 
-DOMAIN_DEPTHS = {'amazon.com': 1, 'homedepot.com': 4,'baike.baidu.com':4}#by myself
-# DEPTH_LIMIT = 3
-# 不限制深度
+# DOMAIN_DEPTHS = {'amazon.com': 1, 'homedepot.com': 4,'baike.baidu.com':3}#by myself
+# DEPTH_LIMIT = 4
 
-
+# ITEM_PIPELINES = {    #此处不做设置，而是在各个spider里指定此spider要调用的pipeline
+#     'scrapyspider.pipelines.BaiKeSpiderPipeline': 300,
+#     'scrapyspider.pipelines.PicturesPipeline': 400
+# }
+#
+ITEM_PIPELINES = {'scrapyspider.pipelines.PicturePipeline': 500}
+IMAGES_STORE = 'C:\\Users\Huang Ziqi\PycharmProjects\scrapyspider\scrapyspider\pictures'
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'scrapyspider (+http://www.yourdomain.com)'
@@ -69,14 +74,9 @@ DOWNLOADER_MIDDLEWARES = {
 
 # Configure item pipelines
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
-ITEM_PIPELINES = {
-   'scrapyspider.pipelines.ScrapyspiderPipeline': 300,
-   'scrapyspider.pipelines.PicturePipeline': 100
-}
-
-IMAGES_STORE = 'D:\Work\scrapyspider\scrapyspider\pictures'
-# 存放图片的文件夹
-
+#ITEM_PIPELINES = {
+#    'scrapyspider.pipelines.ScrapyspiderPipeline': 300,
+#}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://doc.scrapy.org/en/latest/topics/autothrottle.html
