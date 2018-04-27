@@ -1,7 +1,8 @@
+
 from scrapy.spiders import Spider
 import re
 from scrapy import Request
-from scrapyspider.items import PictureItem
+from scrapyspider.items import PicturesItem
 
 import time
 
@@ -22,7 +23,7 @@ class Picture_Spider(Spider):
     def parse(self, response):
 
         list_imgs = response.xpath('//div[@class="summary-pic"]/a/img/@src').extract()
-        item = PictureItem()
+        item = PicturesItem()
         # 从这里开始写 把当前页面的oid放进去
 
 
