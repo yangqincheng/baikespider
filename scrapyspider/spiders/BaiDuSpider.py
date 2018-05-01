@@ -221,7 +221,8 @@ class PicturesSpider(Spider):
             oid=m.group(1)
             img_count=self.counts_and_oids[oid]
 
-            item['image_name']="%s.%s"%(parse.unquote(oid.replace("/","_")),img_count)
+            item['image_name']="%s.%s"%(parse.unquote(oid.replace("/","_")),"1")
+
             print(item['image_name'])
 
         # ticks = time.time()
