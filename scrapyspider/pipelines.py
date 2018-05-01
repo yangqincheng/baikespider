@@ -10,6 +10,10 @@ from scrapy import Request
 
 from scrapy.pipelines.images import ImagesPipeline
 from scrapy.exceptions import DropItem
+from scrapy.utils.project import get_project_settings
+
+import re
+import os
 
 class BaiKeSpiderPipeline(object):
     '''保存到数据库中对应的class
@@ -20,10 +24,10 @@ class BaiKeSpiderPipeline(object):
         self.dbparams = {
             'host':'127.0.0.1',
             'port': 3306,
-            'user': 'root',
-            'password': '1240',
-            # 'user': 'yqc',
-            # 'password': '123456',
+            # 'user': 'root',
+            # 'password': '1240',
+            'user': 'yqc',
+            'password': '123456',
             'db': 'scrapy_baike',
             'charset': 'utf8mb4',
             'cursorclass': pymysql.cursors.DictCursor,
@@ -38,8 +42,8 @@ class BaiKeSpiderPipeline(object):
         self.cursor = self.db.cursor()
 
         try:
-            self.cursor.execute('SET NAMES utf8mb4')
-            self.cursor.execute("SET CHARACTER SET utf8mb4")
+            self.cursor.execute("SET NAMES 'utf8mb4';")
+            self.cursor.execute("SET CHARACTER SET 'utf8mb4';")
             self.cursor.execute("SET character_set_connection=utf8mb4")
             # 执行sql语句
 
@@ -181,6 +185,45 @@ class PicturePipeline(ImagesPipeline):
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36',
     }
 
+    #存储图片到数据库
+    baiduPipelines = BaiKeSpiderPipeline()  # 引用前一个pipelline的各项功能
+    dbparams = baiduPipelines.dbparams
+    execute_sql = baiduPipelines.execute_sql
+    deal_with_quotes=baiduPipelines.deal_with_quotes
+    before_insert_img=True
+
+    def add_an_attribute(self,table_name, attribute_name,attribute_type):
+        sql="""
+        ALTER TABLE %s
+        ADD %s %s;
+        """% (table_name,attribute_name,attribute_type)
+        self.execute_sql(sql)
+
+    def read_file(self,filename):
+        with open(filename, 'rb') as f:
+            picture = f.read()
+        return picture
+
+    def insert_img(self,img_name,img_oid,table_name="entity_table",attribute_name="image_list"):
+        if self.before_insert_img is True:# 如果是第一次使用insert_img函数，添加属性image_list
+            self.before_insert_img=False
+            db_img_type = "text"
+            self.add_an_attribute(table_name,attribute_name,db_img_type)
+            print("add one****")
+
+        img_list=[]
+        img_list.append(img_name)
+
+        #将图片插入实体表
+        sql="""
+        UPDATE %s
+        SET %s=\'%s\'
+        WHERE oid=\'%s\';
+        """%(table_name,attribute_name,self.deal_with_quotes(str(img_list)),self.deal_with_quotes(img_oid))
+        print("update",sql)
+
+        self.execute_sql(sql)
+
     def get_media_requests(self, item, info):
         image_url = item['image_urls']
         self.default_headers['referer'] = image_url
@@ -189,9 +232,23 @@ class PicturePipeline(ImagesPipeline):
         # meta = {'image_name': item['image_name']},
 
     def item_completed(self, results, item, info):
+        settings=get_project_settings()
+        images_dir_path=settings.get('IMAGES_STORE')#找到存储图片的根目录
+
         image_paths = [x['path'] for ok, x in results if ok]
         if not image_paths:
             raise DropItem("Item contains no images")
+        else:
+            image_path=image_paths[0]
+            oid_pattern=re.compile("full\/([^\.]+)\.\d+\.jpg")
+            m=oid_pattern.match(image_path)
+            oid=m.group(1)#图片的count值，对应数据库中的id值
+
+            name_pattern=re.compile("full\/([^\.]+\.(\d+)\.jpg)")
+            name=name_pattern.match(image_path).group(1)
+
+            self.insert_img(name,oid.replace("_","/"))
+
         item['images_paths'] = image_paths
         return item
 
