@@ -61,9 +61,9 @@ class BaiKeSpiderPipeline(object):
             #             return data
             self.db.commit()
             # 提交到数据库执行
-            self.db.close()
-
-            return self.cursor.fetchone()
+            
+            self.db.close()# 关闭数据库
+            return self.cursor.rowcount# 返回cursor运行过程中affected rows的数量
         except:
             # 如果发生错误则回滚
             print("ERR in sql execution!!; The sql is {}".format(sql))
@@ -205,12 +205,6 @@ class PicturePipeline(ImagesPipeline):
         return picture
 
     def insert_img(self,img_name,img_oid,table_name="entity_table",attribute_name="image_list"):
-        if self.before_insert_img is True:# 如果是第一次使用insert_img函数，添加属性image_list
-            self.before_insert_img=False
-            db_img_type = "text"
-            self.add_an_attribute(table_name,attribute_name,db_img_type)
-            print("add one****")
-
         img_list=[]
         img_list.append(img_name)
 
@@ -275,7 +269,31 @@ class PictureUrlsPipeline(object):
 
     baiduPipelines=BaiKeSpiderPipeline()#引用前一个pipelline的各项功能
     dbparams=baiduPipelines.dbparams
-    execute_sql=baiduPipelines.execute_sql
+    def execute_sql(self,sql):
+
+        # 连接数据库，存到t中
+        self.db = pymysql.connect(**self.dbparams)  # **表示将字典扩展为关键字参数,相当于host=xxx,db=yyy....
+        self.cursor = self.db.cursor()
+
+        try:
+            self.cursor.execute('SET NAMES utf8mb4')
+            self.cursor.execute("SET CHARACTER SET utf8mb4")
+            self.cursor.execute("SET character_set_connection=utf8mb4")
+            # 执行sql语句
+
+            if self.cursor.execute(sql) != 1:
+                print("Warning: fetch too many attributes for randow data!!By default excute_sql just return one row's data")
+            
+            self.db.commit()
+            # 提交到数据库执行
+
+            self.db.close()
+            return self.cursor.fetchone()#fetchone()只返回sql语句执行的结果中的第一行（字典形式），如：self.cursor.fetchone()['oid']对应此行的oid
+        except:
+            # 如果发生错误则回滚
+            print("ERR in sql execution!!; The sql is {}".format(sql))
+            self.db.rollback()
+            sys.exit(233)
 
     def max_id(self, table_name):#找出最大的id值
         sql = """
