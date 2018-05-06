@@ -19,12 +19,13 @@ NEWSPIDER_MODULE = 'scrapyspider.spiders'
 
 # ITEM_PIPELINES = {    #此处不做设置，而是在各个spider里指定此spider要调用的pipeline
 #     'scrapyspider.pipelines.BaiKeSpiderPipeline': 300,
-#     'scrapyspider.pipelines.PicturesPipeline': 400
+#     'scrapyspider.pipelines.PicturesPipeline': 400,
+#     'scrapyspider.pipelines.PictureUrlsPipeline': 1
 # }
 #
 ITEM_PIPELINES = {'scrapyspider.pipelines.PicturePipeline': 500}
-IMAGES_STORE = 'C:\\Users\Huang Ziqi\PycharmProjects\scrapyspider\scrapyspider\pictures'
-
+# IMAGES_STORE = 'C:\\Users\Huang Ziqi\PycharmProjects\scrapyspider\scrapyspider\pictures'
+IMAGES_STORE = 'scrapyspider/pictures'
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'scrapyspider (+http://www.yourdomain.com)'
 
