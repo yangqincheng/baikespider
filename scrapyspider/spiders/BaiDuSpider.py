@@ -11,7 +11,7 @@ from scrapyspider import pipelines
 
 
 # import win_unicode_console
-
+#
 # win_unicode_console.enable()
 
 # Linux不用加
@@ -37,9 +37,37 @@ class BaiKeSpider(Spider):
 
     def start_requests(self):
         urls = ['https://baike.baidu.com/item/%E9%B2%81%E8%BF%85/36231',
-                'https://baike.baidu.com/item/%E9%98%BF%E5%B0%94%E4%BC%AF%E7%89%B9%C2%B7%E7%88%B1%E5%9B%A0%E6%96%AF%E5%9D%A6']
+                'https://baike.baidu.com/item/%E9%98%BF%E5%B0%94%E4%BC%AF%E7%89%B9%C2%B7%E7%88%B1%E5%9B%A0%E6%96%AF%E5%9D%A6',
+                'https://baike.baidu.com/item/苹果公司/304038',
+                'https://baike.baidu.com/item/%E5%A7%9A%E6%98%8E/28',
+                'https://baike.baidu.com/item/里奥·梅西/4443471',
+                'https://baike.baidu.com/item/%E7%9A%87%E5%AE%B6%E9%A9%AC%E5%BE%B7%E9%87%8C%E8%B6%B3%E7%90%83%E4%BF%B1%E4%B9%90%E9%83%A8/4606558',
+                'https://baike.baidu.com/item/国际足联世界杯/7872861',
+                'https://baike.baidu.com/item/欧洲冠军联赛/4256767',
+                'https://baike.baidu.com/item/勒布朗·詹姆斯/1989503',
+                'https://baike.baidu.com/item/%E7%BE%BD%E6%AF%9B%E7%90%83/32511',
+                'https://baike.baidu.com/item/%E8%A3%B3%E5%87%A4%E8%9D%B6',
+                'https://baike.baidu.com/item/%E9%93%81%E6%A0%91/110475',
+                'https://baike.baidu.com/item/%E5%B9%BF%E5%BA%9C%E6%96%87%E5%8C%96',
+                'https://baike.baidu.com/item/%E8%B4%9D%E5%8B%92%E5%A4%A7%E5%AD%A6',
+                'https://baike.baidu.com/item/%E6%9B%B9%E6%93%8D/6772',
+                'https://baike.baidu.com/item/%E8%88%9F%E5%B1%B1',
+                'https://baike.baidu.com/item/%E6%AF%9B%E7%BB%86%E8%A1%80%E7%AE%A1',
+                'https://baike.baidu.com/item/绿日/1491833',
+                'https://baike.baidu.com/item/%E7%89%9B%E8%82%89%E4%B8%B8',
+                'https://baike.baidu.com/item/%E4%BA%9A%E4%BC%AF%E6%8B%89%E7%BD%95%C2%B7%E6%9E%97%E8%82%AF/25619',
+                'https://baike.baidu.com/item/%E5%A7%AC%E5%8F%91/529116',
+                'https://baike.baidu.com/item/%E9%98%BF%E5%9F%BA%E7%B1%B3%E5%BE%B7/121228',
+                'https://baike.baidu.com/item/%E9%B2%81%E8%BF%85/36231',
+                'https://baike.baidu.com/item/%E5%88%9D%E9%9F%B3%E6%9C%AA%E6%9D%A5/8231955',
+                'https://baike.baidu.com/item/%E9%B2%81%E4%BC%AF%E7%89%B9%C2%B7%E9%BB%98%E5%A4%9A%E5%85%8B/4172117',
+                'https://baike.baidu.com/item/%E6%B2%83%E4%BC%A6%C2%B7%E5%B7%B4%E8%8F%B2%E7%89%B9'
+                ]
+
         for url in urls:
             yield Request(url, headers=self.headers)
+            # yield Request(url, headers=self.headers,dont_filter=True)
+            # scrapy会对request的URL去重(RFPDupeFilter)，加上dont_filter则告诉它这个URL不参与去重
 
     def parse(self, response):
         sel = Selector(response)
@@ -182,7 +210,7 @@ class PicturesSpider(Spider):
     }
     custom_settings = {
         'ITEM_PIPELINES': {
-            'scrapyspider.pipelines.PictureUrlsPipeline': 1,
+            'scrapyspider.pipelines.PictureUrlsPipeline': 400,
             'scrapyspider.pipelines.PicturePipeline': 500
         }
     }
@@ -194,7 +222,7 @@ class PicturesSpider(Spider):
 
     def start_requests(self):
         count=1
-        maxWantID=400
+        maxWantID=100000
         while count <= maxWantID:
             oid = parse.quote(self.pics.get_oid("entity_table", count))
             self.counts_and_oids[oid]=str(count) #避免后期存储入文件夹时，斜杠被当做路径分割符号
