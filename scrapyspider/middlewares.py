@@ -12,7 +12,7 @@ class ScrapyspiderSpiderMiddleware(object):
     # Not all methods need to be defined. If a method is not defined,
     # scrapy acts as if the spider middleware does not modify the
     # passed objects.
-
+    # 预计引入scrapy-redis组件来优化URL查重速度
     @classmethod
     def from_crawler(cls, crawler):
         # This method is used by Scrapy to create your spiders.
