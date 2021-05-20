@@ -14,6 +14,10 @@ BOT_NAME = 'scrapyspider'
 SPIDER_MODULES = ['scrapyspider.spiders']
 NEWSPIDER_MODULE = 'scrapyspider.spiders'
 
+SCHEDULER = "scrapy_redis.scheduler.Scheduler"
+DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
+REDIS_START_URLS_AS_SET = True
+
 # DOMAIN_DEPTHS = {'amazon.com': 1, 'homedepot.com': 4,'baike.baidu.com':3}#by myself
 # DEPTH_LIMIT = 4
 
