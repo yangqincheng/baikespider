@@ -1,0 +1,53 @@
+name: Feature or improvement
+description: Suggest a focused improvement to BaikeSpider
+title: "[Enhancement]: "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Improvements that make the crawler easier to run, understand, test, or maintain are welcome.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or motivation
+      description: What limitation or maintenance problem would this address?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Describe the smallest useful change you have in mind.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Baidu Baike parsing/selectors
+        - Crawling and scheduling
+        - Deduplication
+        - MySQL persistence
+        - Image pipeline
+        - Configuration and security
+        - Tests and CI
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Optional. Mention workarounds or other approaches you considered.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: This request is focused on legitimate crawling, maintenance, research, or educational use.
+          required: true
+        - label: I searched existing issues for a similar proposal.
+          required: true

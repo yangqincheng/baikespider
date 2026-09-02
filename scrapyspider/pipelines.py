@@ -4,16 +4,15 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: https://doc.scrapy.org/en/latest/topics/item-pipeline.html
-import pymysql.cursors
-import sys
-from scrapy import Request
-
-from scrapy.pipelines.images import ImagesPipeline
-from scrapy.exceptions import DropItem
-from scrapy.utils.project import get_project_settings
-
-import re
 import os
+import re
+import sys
+
+import pymysql.cursors
+from scrapy import Request
+from scrapy.exceptions import DropItem
+from scrapy.pipelines.images import ImagesPipeline
+from scrapy.utils.project import get_project_settings
 
 
 class BaiKeSpiderPipeline(object):
@@ -22,41 +21,38 @@ class BaiKeSpiderPipeline(object):
        2、在自己实现的爬虫类中yield item,会自动执行'''
 
     def __init__(self):
+        # Keep credentials outside source control. The defaults are suitable
+        # for a local MySQL development instance and can be overridden with
+        # the BAIKESPIDER_DB_* environment variables documented in README.md.
         self.dbparams = {
-            'host': '127.0.0.1',
-            'port': 3306,
-            # 'user': 'root',
-            # 'password': '1240',
-            'user': 'yqc',
-            'password': '123456',
-            'db': 'scrapy_baike',
+            'host': os.getenv('BAIKESPIDER_DB_HOST', '127.0.0.1'),
+            'port': int(os.getenv('BAIKESPIDER_DB_PORT', '3306')),
+            'user': os.getenv('BAIKESPIDER_DB_USER', 'root'),
+            'password': os.getenv('BAIKESPIDER_DB_PASSWORD', ''),
+            'db': os.getenv('BAIKESPIDER_DB_NAME', 'scrapy_baike'),
             'charset': 'utf8mb4',
             'cursorclass': pymysql.cursors.DictCursor,
         }
 
     def execute_sql(self, sql):
-
         # 连接数据库，存到t中
-        self.db = pymysql.connect(**self.dbparams)  # **表示将字典扩展为关键字参数,相当于host=xxx,db=yyy....
+        self.db = pymysql.connect(**self.dbparams)
         self.cursor = self.db.cursor()
 
         try:
             self.cursor.execute("SET NAMES 'utf8mb4';")
             self.cursor.execute("SET CHARACTER SET 'utf8mb4';")
             self.cursor.execute("SET character_set_connection=utf8mb4")
-            # 执行sql语句
-
-
+            self.cursor.execute(sql)
             self.db.commit()
-            # 提交到数据库执行
-
-            self.db.close()  # 关闭数据库
-            return self.cursor.rowcount  # 返回cursor运行过程中affected rows的数量
-        except:
-            # 如果发生错误则回滚
+            affected_rows = self.cursor.rowcount
+            self.db.close()
+            return affected_rows
+        except Exception:
             print("ERR in sql execution!!; The sql is {}".format(sql))
             self.db.rollback()
-            sys.exit(233)
+            self.db.close()
+            raise
 
     def deal_with_quotes(self, processed_str):  # 处理插入MySQL的引号问题
         return processed_str.replace("\"", "\\\"").replace("\'", "\\\'")
@@ -70,7 +66,7 @@ class BaiKeSpiderPipeline(object):
         descrip     TEXT NOT NULL,
         infobox     TEXT,
         infolink   TEXT,
-        tag         TEXT    
+        tag         TEXT
         );
         """ % table_name
         self.execute_sql(sql)
@@ -93,7 +89,7 @@ class BaiKeSpiderPipeline(object):
 
     def exists_in_table(self, table_name, attribute_name, value_name):
         sql = """
-        SELECT * FROM 
+        SELECT * FROM
         %s
         WHERE %s="%s" ;
         """ % (table_name, attribute_name, self.deal_with_quotes(value_name))
@@ -123,8 +119,8 @@ class BaiKeSpiderPipeline(object):
                     values = "\"%s\"" % self.deal_with_quotes(value)
                     firstRun = False
                 count += 1
-        except:
-            sys.exit(104)
+        except Exception:
+            raise
 
         sql = """
         INSERT INTO %s(%s)
@@ -172,7 +168,7 @@ class PicturePipeline(ImagesPipeline):
     }
 
     # 存储图片到数据库
-    baiduPipelines = BaiKeSpiderPipeline()  # 引用前一个pipelline的各项功能
+    baiduPipelines = BaiKeSpiderPipeline()
     dbparams = baiduPipelines.dbparams
     execute_sql = baiduPipelines.execute_sql
     deal_with_quotes = baiduPipelines.deal_with_quotes
@@ -194,7 +190,6 @@ class PicturePipeline(ImagesPipeline):
         img_list = []
         img_list.append(img_name)
 
-        # 将图片插入实体表
         sql = """
         UPDATE %s
         SET %s=\'%s\'
@@ -209,11 +204,10 @@ class PicturePipeline(ImagesPipeline):
         self.default_headers['referer'] = image_url
         if image_url != "none":
             yield Request(image_url, meta={'image_name': item['image_name']}, headers=self.default_headers)
-            # meta = {'image_name': item['image_name']},
 
     def item_completed(self, results, item, info):
         settings = get_project_settings()
-        images_dir_path = settings.get('IMAGES_STORE')  # 找到存储图片的根目录
+        images_dir_path = settings.get('IMAGES_STORE')
 
         image_paths = [x['path'] for ok, x in results if ok]
         if not image_paths:
@@ -222,7 +216,7 @@ class PicturePipeline(ImagesPipeline):
             image_path = image_paths[0]
             oid_pattern = re.compile("full\/([^\.]+)\.\d+\.jpg")
             m = oid_pattern.match(image_path)
-            oid = m.group(1)  # 图片的count值，对应数据库中的id值
+            oid = m.group(1)
 
             name_pattern = re.compile("full\/([^\.]+\.(\d+)\.jpg)")
             name = name_pattern.match(image_path).group(1)
@@ -233,9 +227,6 @@ class PicturePipeline(ImagesPipeline):
         return item
 
     def file_path(self, request, response=None, info=None):
-        # tmp = request.url.split('/')[-1]
-        # # name = tmp+".jpg"
-        # return 'full/%s' % (tmp)
         return 'full/%s.jpg' % request.meta['image_name']
 
 
@@ -254,41 +245,33 @@ class PictureUrlsPipeline(object):
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36',
     }
 
-    baiduPipelines = BaiKeSpiderPipeline()  # 引用前一个pipelline的各项功能
+    baiduPipelines = BaiKeSpiderPipeline()
     dbparams = baiduPipelines.dbparams
 
     def execute_sql(self, sql):
-
-        # 连接数据库，存到t中
-        self.db = pymysql.connect(**self.dbparams)  # **表示将字典扩展为关键字参数,相当于host=xxx,db=yyy....
+        self.db = pymysql.connect(**self.dbparams)
         self.cursor = self.db.cursor()
 
         try:
             self.cursor.execute('SET NAMES utf8mb4')
             self.cursor.execute("SET CHARACTER SET utf8mb4")
             self.cursor.execute("SET character_set_connection=utf8mb4")
-            # 执行sql语句
-
-            # if self.cursor.execute(sql) != 1:
-            #     print(
-            #         "Warning: fetch too many attributes for randow data!!By default excute_sql just return one row's data")
-
+            self.cursor.execute(sql)
+            result = self.cursor.fetchone()
             self.db.commit()
-            # 提交到数据库执行
-
             self.db.close()
-            return self.cursor.fetchone()  # fetchone()只返回sql语句执行的结果中的第一行（字典形式），如：self.cursor.fetchone()['oid']对应此行的oid
-        except:
-            # 如果发生错误则回滚
+            return result
+        except Exception:
             print("ERR in sql execution!!; The sql is {}".format(sql))
             self.db.rollback()
-            sys.exit(233)
+            self.db.close()
+            raise
 
-    def max_id(self, table_name):  # 找出最大的id值
+    def max_id(self, table_name):
         sql = """
         SELECT MAX(id) FROM %s;
         """ % table_name
-        result = int(float(self.execute_sql(sql)['MAX(id)']))  # MySQL默认返回的是浮点类型
+        result = int(float(self.execute_sql(sql)['MAX(id)']))
         print("the max_id is ", result)
         if result <= 0:
             print('Err in get max_id: got max id <= 0')
@@ -298,7 +281,7 @@ class PictureUrlsPipeline(object):
 
     def get_oid(self, table_name, id):
         tbl_max_id = self.max_id(table_name)
-        if id > tbl_max_id:  # 检查id是否越界
+        if id > tbl_max_id:
             print("ERR: The id you give is to big! No such row")
             sys.exit(233)
 
@@ -306,6 +289,6 @@ class PictureUrlsPipeline(object):
         SELECT oid FROM %s
         WHERE id=%s;
         """ % (table_name, id)
-        return self.execute_sql(sql)['oid']  # 注意fetchone返回的是字典类型
+        return self.execute_sql(sql)['oid']
 
 

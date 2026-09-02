@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.venv/
+venv/
+
+# Local configuration / credentials
+.env
+.env.local
+
+# Scrapy runtime state
+.scrapy/
+loginfo/
+
+# Generated images / crawl output
+scrapyspider/pictures/
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
