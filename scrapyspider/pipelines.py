@@ -4,16 +4,15 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: https://doc.scrapy.org/en/latest/topics/item-pipeline.html
-import pymysql.cursors
-import sys
-from scrapy import Request
-
-from scrapy.pipelines.images import ImagesPipeline
-from scrapy.exceptions import DropItem
-from scrapy.utils.project import get_project_settings
-
-import re
 import os
+import re
+import sys
+
+import pymysql.cursors
+from scrapy import Request
+from scrapy.exceptions import DropItem
+from scrapy.pipelines.images import ImagesPipeline
+from scrapy.utils.project import get_project_settings
 
 
 class BaiKeSpiderPipeline(object):
@@ -22,14 +21,15 @@ class BaiKeSpiderPipeline(object):
        2、在自己实现的爬虫类中yield item,会自动执行'''
 
     def __init__(self):
+        # Keep credentials outside source control. The defaults are suitable
+        # for a local MySQL development instance and can be overridden with
+        # the BAIKESPIDER_DB_* environment variables documented in README.md.
         self.dbparams = {
-            'host': '127.0.0.1',
-            'port': 3306,
-            # 'user': 'root',
-            # 'password': '1240',
-            'user': 'yqc',
-            'password': '123456',
-            'db': 'scrapy_baike',
+            'host': os.getenv('BAIKESPIDER_DB_HOST', '127.0.0.1'),
+            'port': int(os.getenv('BAIKESPIDER_DB_PORT', '3306')),
+            'user': os.getenv('BAIKESPIDER_DB_USER', 'root'),
+            'password': os.getenv('BAIKESPIDER_DB_PASSWORD', ''),
+            'db': os.getenv('BAIKESPIDER_DB_NAME', 'scrapy_baike'),
             'charset': 'utf8mb4',
             'cursorclass': pymysql.cursors.DictCursor,
         }
