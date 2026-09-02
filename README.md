@@ -4,28 +4,26 @@
 [![GitHub forks](https://img.shields.io/github/forks/yangqincheng/baikespider?style=flat-square)](https://github.com/yangqincheng/baikespider/network/members)
 [![Python](https://img.shields.io/badge/language-Python-blue?style=flat-square)](https://www.python.org/)
 
-**BaikeSpider** is an open-source Scrapy project for collecting structured data from Baidu Baike. It crawls encyclopedia entities from multiple seed pages, follows related-entry links, extracts structured metadata, records polysemy/synonym information, and can download representative images for collected entities.
+**BaikeSpider** is an open-source Scrapy project for collecting structured data from Baidu Baike. It starts from multiple seed entries, follows related-entry links, extracts structured metadata, records polysemy/synonym information, persists data to MySQL, and can download representative images for collected entities.
 
-The project was created as a practical implementation of large-scale encyclopedia crawling and structured-data preprocessing. It is useful as a reference for Scrapy crawling pipelines, recursive graph-style traversal, entity deduplication, MySQL persistence, and knowledge-base / knowledge-graph data preparation experiments.
+The repository is useful as a reference implementation for recursive web crawling, structured encyclopedia extraction, entity deduplication, Scrapy pipelines, MySQL persistence, and knowledge-base / knowledge-graph data preparation.
 
 > **Project status**
 >
-> BaikeSpider is maintained as an open-source reference implementation. The current crawler was originally built against an earlier Baidu Baike page structure, so upstream DOM or anti-crawling changes may require selector or dependency updates before production use. Compatibility fixes, documentation improvements, and modernization contributions are welcome.
+> BaikeSpider is maintained as an open-source reference implementation. The crawler was originally built against an earlier Baidu Baike page structure, so upstream DOM or anti-crawling changes may require selector or dependency updates before production use. Compatibility fixes, documentation improvements, tests, and modernization contributions are welcome.
 
 ## Highlights
 
-- **Recursive entity discovery** — starts from multiple seed entries and follows related Baidu Baike links to discover additional entities.
-- **Structured extraction** — captures entity name, summary/description, infobox fields, tags, related infobox links, and entry identifiers.
-- **Polysemy / synonym modeling** — stores multiple meanings and corresponding entry identifiers in a separate table.
-- **Two-layer deduplication** — uses Scrapy request deduplication during crawling and performs an additional database-level check before insertion.
-- **MySQL persistence** — stores crawled entities and synonym/polysemy relationships in structured tables.
+- **Recursive entity discovery** — starts from multiple seed entries and follows related Baidu Baike links.
+- **Structured extraction** — captures names, summaries, infobox fields, tags, related links, and entry identifiers.
+- **Polysemy / synonym modeling** — stores multiple meanings and corresponding entry identifiers separately.
+- **Two-layer deduplication** — combines Scrapy request filtering with database-level checks before insertion.
+- **MySQL persistence** — stores entities and synonym/polysemy relationships in structured tables.
 - **Image crawling pipeline** — downloads representative entry images and associates them with collected entities.
-- **Resumable crawling** — supports Scrapy `JOBDIR`, allowing long-running crawling tasks to be stopped and resumed.
+- **Resumable crawling** — supports Scrapy `JOBDIR` for interruptible long-running tasks.
 - **Bloom filter experiment** — includes a Bloom filter implementation for deduplication-related experiments.
 
 ## How it works
-
-BaikeSpider treats Baidu Baike as a graph of connected encyclopedia entries.
 
 ```text
 Seed entries
@@ -49,15 +47,11 @@ Fetch Baidu Baike page
         Schedule next entries
 ```
 
-This traversal continues as Scrapy discovers new entry URLs. Scrapy filters duplicate requests, while the persistence layer performs an additional check by entity identifier before inserting records.
+Scrapy filters duplicate requests during traversal, while the persistence layer checks entity identifiers before inserting records into MySQL.
 
 ## Data model
 
-The crawler primarily works with two tables.
-
 ### `entity_table`
-
-Stores the structured representation of a Baidu Baike entry.
 
 | Field | Description |
 | --- | --- |
@@ -70,8 +64,6 @@ Stores the structured representation of a Baidu Baike entry.
 | `tag` | Baidu Baike entry tags |
 
 ### `synonym_table`
-
-Stores polysemy / same-name relationships.
 
 | Field | Description |
 | --- | --- |
@@ -86,7 +78,11 @@ The image pipeline can additionally associate downloaded image names with entity
 
 ```text
 baikespider/
+├── .env.example
+├── .gitignore
+├── CONTRIBUTING.md
 ├── README.md
+├── requirements.txt
 ├── scrapy.cfg
 └── scrapyspider/
     ├── Bloomfilter.py
@@ -95,7 +91,6 @@ baikespider/
     ├── pipelines.py
     ├── request_seen.py
     ├── settings.py
-    ├── picture/
     └── spiders/
         ├── BaiDuSpider.py
         ├── Picture_Spider.py
@@ -103,7 +98,7 @@ baikespider/
         └── test_spider.py
 ```
 
-The main Baidu Baike implementation lives in `scrapyspider/spiders/BaiDuSpider.py`:
+The primary Baidu Baike implementation lives in `scrapyspider/spiders/BaiDuSpider.py`:
 
 - `BaiKeSpider` (`name = "baike"`) crawls and stores structured encyclopedia entries.
 - `PicturesSpider` (`name = "pic"`) reads collected entity identifiers and downloads representative images.
@@ -121,29 +116,35 @@ cd baikespider
 
 ### 2. Install dependencies
 
-The project uses Scrapy and PyMySQL. `urllib` functionality used by the crawler is provided by Python's standard library.
-
 ```bash
-pip install scrapy pymysql
+python -m pip install -r requirements.txt
 ```
 
-Because this codebase originated several years ago, newer Scrapy/Python versions may require small compatibility changes. If you run into one, please open an issue or submit a pull request with the environment details.
+The declared dependencies are Scrapy, PyMySQL, and `scrapy-redis`. Because this codebase originated several years ago, newer Python/Scrapy versions may still require small compatibility changes. If you encounter one, please open an issue with your environment details.
 
 ### 3. Configure MySQL
 
-Create a MySQL database (the original project uses `scrapy_baike`) and configure the connection parameters in `scrapyspider/pipelines.py` before running the crawler.
+BaikeSpider no longer keeps database credentials in source code. Configure the connection with environment variables:
 
-The pipeline contains helper methods for creating the entity and synonym tables. The expected schemas are documented in the [Data model](#data-model) section above.
+```bash
+export BAIKESPIDER_DB_HOST=127.0.0.1
+export BAIKESPIDER_DB_PORT=3306
+export BAIKESPIDER_DB_USER=root
+export BAIKESPIDER_DB_PASSWORD='your-password'
+export BAIKESPIDER_DB_NAME=scrapy_baike
+```
 
-> **Security note:** do not commit production database credentials. Replace local-development defaults with credentials appropriate for your own environment.
+See `.env.example` for the full set of variables. The code uses safe local defaults for host, port, username, and database name, while the password defaults to an empty value.
+
+> Do not commit real credentials or production configuration.
 
 ### 4. Configure image storage
 
-If you want to run the image crawler, configure `IMAGES_STORE` in `scrapyspider/settings.py` to point to the directory where downloaded images should be stored.
+If you want to run the image crawler, configure `IMAGES_STORE` in `scrapyspider/settings.py`. The current default is a repository-local pictures directory, which is ignored by Git.
 
 ### 5. Run the entity crawler
 
-Run commands from the directory containing `scrapy.cfg`.
+Run commands from the directory containing `scrapy.cfg`:
 
 ```bash
 scrapy crawl baike -s JOBDIR=loginfo/baike
@@ -151,7 +152,7 @@ scrapy crawl baike -s JOBDIR=loginfo/baike
 
 `JOBDIR` stores crawler state so an interrupted crawl can later resume. Use a separate job directory for each spider.
 
-To stop a running crawl gracefully, press `Ctrl+C` and allow Scrapy to finish persisting its state. Restarting with the same `JOBDIR` resumes the crawl.
+To stop a running crawl gracefully, press `Ctrl+C` and allow Scrapy to persist its state. Restarting with the same `JOBDIR` resumes the crawl.
 
 ### 6. Run the image crawler
 
@@ -165,16 +166,16 @@ The image crawler reads entity identifiers from `entity_table`, visits the corre
 
 ## Core extraction fields
 
-`BaiKeItem` currently exposes the following fields:
+`BaiKeItem` currently exposes:
 
 ```text
 name
- descrip
- infobox
- tag
- oid
- infolink
- polysemy
+descrip
+infobox
+tag
+oid
+infolink
+polysemy
 ```
 
 `PicturesItem` tracks image URLs, downloaded image metadata, file paths, image names, counters, and the corresponding entity identifier.
@@ -183,30 +184,32 @@ name
 
 ### Recursive crawling
 
-The entity crawler begins with a diverse set of seed entries and then discovers additional `/item/...` links from each fetched page. This turns the crawler into a breadth of connected encyclopedia entries rather than a fixed list scraper.
+The entity crawler starts from a diverse set of seed entries and discovers additional `/item/...` links from each fetched page, turning the crawl into a traversal of connected encyclopedia entries rather than a fixed-list scraper.
 
 ### Deduplication
 
 Two levels of deduplication are used:
 
-1. Scrapy's request filtering prevents the same URL from being scheduled repeatedly.
-2. Before writing to MySQL, the pipeline checks whether the corresponding `oid` is already present.
+1. Scrapy's request filtering prevents repeated scheduling of the same URL.
+2. Before writing to MySQL, the pipeline checks whether the corresponding entity identifier is already present.
 
-This is particularly useful when multiple pages lead to the same entity or when polysemous entry names are involved.
+### Persistence
+
+The MySQL pipeline executes generated SQL statements, commits successful operations, and closes the database connection after each operation. Database connection settings are read from `BAIKESPIDER_DB_*` environment variables so local credentials do not need to live in the repository.
 
 ### Resumability
 
-Long-running crawls are expected to be interruptible. Scrapy's `JOBDIR` mechanism persists scheduler state, allowing the crawler to resume from the previous run instead of restarting from the seed set.
+Scrapy's `JOBDIR` mechanism persists scheduler state, allowing the crawler to resume after an intentional stop instead of restarting from the seed set.
 
 ## Maintenance priorities
 
-The repository is intentionally kept public as a working/reference implementation. Useful future improvements include:
+Current modernization priorities include:
 
 - update selectors for the current Baidu Baike DOM;
-- move database configuration fully to environment variables or a local config file;
-- add pinned dependency versions and reproducible environment setup;
-- improve error handling and retry behavior;
-- add automated tests for parsers and persistence logic;
+- verify and document supported Python/Scrapy versions;
+- add parser and persistence tests;
+- migrate legacy SQL construction toward parameterized queries;
+- improve retry, timeout, and error handling;
 - simplify legacy/demo code paths;
 - document larger-scale crawl operational practices.
 
@@ -216,13 +219,13 @@ Contributions in these areas are especially welcome.
 
 Issues and pull requests are welcome. Good contributions include compatibility fixes, parser improvements, documentation corrections, safer configuration, tests, and crawler reliability improvements.
 
-Please see [CONTRIBUTING.md](CONTRIBUTING.md) for a lightweight contribution guide.
+Please see [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution guide.
 
 ## Maintainer
 
 BaikeSpider is owned and maintained by [@yangqincheng](https://github.com/yangqincheng).
 
-The repository has been public since 2018 and has attracted community stars and forks over time. The goal of the current maintenance effort is to preserve the project as a useful, understandable reference for Scrapy-based structured encyclopedia crawling while progressively improving compatibility and maintainability.
+The repository has been public since 2018 and has attracted community stars and forks over time. The current maintenance effort focuses on preserving the project as a useful, understandable reference for Scrapy-based structured encyclopedia crawling while progressively improving compatibility, configuration safety, and maintainability.
 
 ## Responsible use
 
@@ -232,4 +235,4 @@ This repository is intended for learning, research, and engineering reference pu
 
 BaikeSpider 是一个基于 Scrapy 的百度百科结构化数据爬虫。项目从多个初始百科词条出发，递归发现相关词条，并提取词条名称、简介、Infobox、标签、相关链接以及多义词信息，最终保存到 MySQL；同时包含词条图片抓取、数据库二次去重和 `JOBDIR` 断点续爬等实现。
 
-这个仓库目前主要作为 **Scrapy 爬虫、百科实体采集和结构化数据预处理的开源参考实现** 进行维护。由于百度百科页面结构可能发生变化，实际运行前可能需要更新 XPath / selector 或依赖版本。如果你发现兼容性问题，欢迎提交 Issue 或 Pull Request。
+当前仓库主要作为 **Scrapy 爬虫、百科实体采集和结构化数据预处理的开源参考实现** 进行维护。近期维护重点包括文档整理、数据库配置安全化、依赖声明以及修复持久化流程中的明显问题。由于百度百科页面结构可能发生变化，实际运行前仍可能需要更新 XPath / selector 或依赖版本。
