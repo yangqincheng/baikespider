@@ -1,0 +1,10 @@
+# Default code owner for the repository.
+* @yangqincheng
+
+# Project-facing documentation and contribution workflow.
+/README.md @yangqincheng
+/CONTRIBUTING.md @yangqincheng
+/.github/ @yangqincheng
+
+# Core crawler and persistence implementation.
+/scrapyspider/ @yangqincheng
